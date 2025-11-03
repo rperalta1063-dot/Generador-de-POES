@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
-import { POE, Step } from '../types';
-import { PlusIcon, TrashIcon, XCircle } from '../components/Icons';
+import { POE, Step, Responsibility } from '../types';
+import { PlusIcon, TrashIcon, XCircle, XIcon } from '../components/Icons';
 import ConfirmationModal from '../components/ConfirmationModal';
 
 const CreatePoe: React.FC = () => {
@@ -18,8 +18,8 @@ const CreatePoe: React.FC = () => {
         code: '',
         title: '',
         applicationArea: '',
-        responsible: '',
-        frequency: '',
+        responsibilities: [{ id: 1, cargo: '', responsabilidad: '' }],
+        frequency: [],
         objective: '',
         scope: '',
         productsAndMaterials: '',
@@ -38,11 +38,18 @@ const CreatePoe: React.FC = () => {
         history: [],
     });
 
+    const [customFrequency, setCustomFrequency] = useState('');
+    const predefinedFrequencies = ["Después de cada uso", "Al menos una vez al dia", "Al final de la jornada", "Diaria", "Semanal", "Mensual", "Anual", "Según necesidad"];
+
     useEffect(() => {
         if (isEditing) {
             const poeToEdit = poes.find(p => p.id === Number(id));
             if (poeToEdit) {
-                setPoe(poeToEdit);
+                const poeData = {
+                    ...poeToEdit,
+                    frequency: Array.isArray(poeToEdit.frequency) ? poeToEdit.frequency : (poeToEdit.frequency ? [String(poeToEdit.frequency)] : [])
+                };
+                setPoe(poeData);
             }
         }
     }, [id, isEditing, poes]);
@@ -54,7 +61,7 @@ const CreatePoe: React.FC = () => {
     }, [currentEstablishment, isEditing]);
 
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
         setPoe({ ...poe, [name]: value });
         if (errors[name]) {
@@ -64,6 +71,33 @@ const CreatePoe: React.FC = () => {
                 return newErrors;
             });
         }
+    };
+
+    const handleResponsibilityChange = (index: number, field: keyof Omit<Responsibility, 'id'>, value: string) => {
+        const newResponsibilities = [...poe.responsibilities];
+        newResponsibilities[index][field] = value;
+        setPoe({ ...poe, responsibilities: newResponsibilities });
+        
+        const errorKeyCargo = `resp_${index}_cargo`;
+        if (errors[errorKeyCargo] && field === 'cargo') {
+            setErrors(prev => { const newErrors = {...prev}; delete newErrors[errorKeyCargo]; return newErrors; });
+        }
+        const errorKeyResp = `resp_${index}_responsabilidad`;
+        if (errors[errorKeyResp] && field === 'responsabilidad') {
+            setErrors(prev => { const newErrors = {...prev}; delete newErrors[errorKeyResp]; return newErrors; });
+        }
+    };
+
+    const addResponsibility = () => {
+        setPoe({
+            ...poe,
+            responsibilities: [...poe.responsibilities, { id: Date.now(), cargo: '', responsabilidad: '' }],
+        });
+    };
+
+    const removeResponsibility = (index: number) => {
+        const newResponsibilities = poe.responsibilities.filter((_, i) => i !== index);
+        setPoe({ ...poe, responsibilities: newResponsibilities });
     };
 
     const handleStepChange = (index: number, field: keyof Omit<Step, 'id' | 'image'>, value: string) => {
@@ -77,6 +111,35 @@ const CreatePoe: React.FC = () => {
                 delete newErrors[errorKey];
                 return newErrors;
             });
+        }
+    };
+    
+    const handleFrequencyChange = (freq: string, isChecked: boolean) => {
+        let newFrequencies = [...poe.frequency];
+        if (isChecked) {
+            if (!newFrequencies.includes(freq)) {
+                newFrequencies.push(freq);
+            }
+        } else {
+            newFrequencies = newFrequencies.filter(f => f !== freq);
+        }
+        setPoe({ ...poe, frequency: newFrequencies });
+        if (errors.frequency) {
+            setErrors(prev => { const newErrors = {...prev}; delete newErrors.frequency; return newErrors; });
+        }
+    };
+
+    const addCustomFrequency = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter' && customFrequency.trim() !== '') {
+            e.preventDefault();
+            const newFreq = customFrequency.trim();
+            if (!poe.frequency.includes(newFreq)) {
+                setPoe(prev => ({...prev, frequency: [...prev.frequency, newFreq]}));
+                 if (errors.frequency) {
+                    setErrors(prev => { const newErrors = {...prev}; delete newErrors.frequency; return newErrors; });
+                }
+            }
+            setCustomFrequency('');
         }
     };
 
@@ -99,8 +162,17 @@ const CreatePoe: React.FC = () => {
         if (!poe.code.trim()) newErrors.code = 'El campo "Código" es obligatorio.';
         if (!poe.title.trim()) newErrors.title = 'El campo "Título/Nombre del POE" es obligatorio.';
         if (!poe.applicationArea.trim()) newErrors.applicationArea = 'El campo "Área de aplicación" es obligatorio.';
-        if (!poe.responsible.trim()) newErrors.responsible = 'El campo "Responsable" es obligatorio.';
-        if (!poe.frequency) newErrors.frequency = 'Debe seleccionar una "Frecuencia".';
+        
+        if (poe.responsibilities.length === 0) {
+            newErrors.responsibilities = 'Debe agregar al menos una responsabilidad.';
+        } else {
+            poe.responsibilities.forEach((resp, index) => {
+                if (!resp.cargo.trim()) newErrors[`resp_${index}_cargo`] = `El cargo es obligatorio.`;
+                if (!resp.responsabilidad.trim()) newErrors[`resp_${index}_responsabilidad`] = `La responsabilidad es obligatoria.`;
+            });
+        }
+
+        if (!poe.frequency.length) newErrors.frequency = 'Debe seleccionar al menos una "Frecuencia".';
         if (!poe.objective.trim()) newErrors.objective = 'El campo "Objetivo" es obligatorio.';
         if (!poe.scope.trim()) newErrors.scope = 'El campo "Alcance" es obligatorio.';
         if (!poe.productsAndMaterials.trim()) newErrors.productsAndMaterials = 'El campo "Productos y materiales" es obligatorio.';
@@ -147,9 +219,7 @@ const CreatePoe: React.FC = () => {
 
     const handleSaveDraft = (e: React.FormEvent) => {
         e.preventDefault();
-        if (validateForm()) {
-            handleSave('draft');
-        }
+        handleSave('draft');
     };
 
     const handleSendForApproval = (e: React.FormEvent) => {
@@ -205,24 +275,89 @@ const CreatePoe: React.FC = () => {
                             <input type="text" name="applicationArea" id="applicationArea" value={poe.applicationArea} onChange={handleChange} required className={`mt-1 block w-full rounded-md shadow-sm ${errors.applicationArea ? 'border-red-300 text-red-900 placeholder-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:border-sky-500 focus:ring-sky-500'}`} />
                             {errors.applicationArea && <p className="mt-2 text-sm text-red-600">{errors.applicationArea}</p>}
                         </div>
-                        <div>
-                            <label htmlFor="responsible" className="block text-sm font-medium text-gray-700">Responsable</label>
-                            <input type="text" name="responsible" id="responsible" value={poe.responsible} onChange={handleChange} required className={`mt-1 block w-full rounded-md shadow-sm ${errors.responsible ? 'border-red-300 text-red-900 placeholder-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:border-sky-500 focus:ring-sky-500'}`} />
-                            {errors.responsible && <p className="mt-2 text-sm text-red-600">{errors.responsible}</p>}
+                        <div className="md:col-span-2">
+                            <h3 className="block text-sm font-medium text-gray-700 mb-2">RESPONSABILIDADES</h3>
+                            <div className={`p-3 border rounded-md bg-gray-50 space-y-4 ${errors.responsibilities ? 'border-red-300' : 'border-gray-200'}`}>
+                                {poe.responsibilities.map((resp, index) => (
+                                    <div key={resp.id} className="p-3 border rounded-md relative bg-white shadow-sm">
+                                        {poe.responsibilities.length > 1 && (
+                                            <button type="button" onClick={() => removeResponsibility(index)} className="absolute top-2 right-2 p-1 text-red-500 hover:text-red-700">
+                                                <TrashIcon className="w-5 h-5" />
+                                            </button>
+                                        )}
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div>
+                                                <label htmlFor={`cargo_${index}`} className="text-sm font-medium text-gray-700">Cargo</label>
+                                                <input 
+                                                    type="text" 
+                                                    id={`cargo_${index}`}
+                                                    name="cargo"
+                                                    value={resp.cargo} 
+                                                    onChange={e => handleResponsibilityChange(index, 'cargo', e.target.value)} 
+                                                    required 
+                                                    className={`w-full text-sm mt-1 block rounded-md shadow-sm ${errors[`resp_${index}_cargo`] ? 'border-red-300 text-red-900 placeholder-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:border-sky-500 focus:ring-sky-500'}`} />
+                                                {errors[`resp_${index}_cargo`] && <p className="mt-1 text-sm text-red-600">{errors[`resp_${index}_cargo`]}</p>}
+                                            </div>
+                                            <div>
+                                                <label htmlFor={`responsabilidad_${index}`} className="text-sm font-medium text-gray-700">Responsabilidad</label>
+                                                <input 
+                                                    type="text" 
+                                                    id={`responsabilidad_${index}`}
+                                                    name="responsabilidad"
+                                                    value={resp.responsabilidad} 
+                                                    onChange={e => handleResponsibilityChange(index, 'responsabilidad', e.target.value)} 
+                                                    required 
+                                                    className={`w-full text-sm mt-1 block rounded-md shadow-sm ${errors[`resp_${index}_responsabilidad`] ? 'border-red-300 text-red-900 placeholder-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:border-sky-500 focus:ring-sky-500'}`} />
+                                                {errors[`resp_${index}_responsabilidad`] && <p className="mt-1 text-sm text-red-600">{errors[`resp_${index}_responsabilidad`]}</p>}
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                                <button type="button" onClick={addResponsibility} className="mt-2 flex items-center px-3 py-2 text-sm font-medium text-sky-600 bg-sky-100 rounded-md hover:bg-sky-200">
+                                    <PlusIcon className="w-4 h-4 mr-2" /> Agregar Responsabilidad
+                                </button>
+                            </div>
+                             {errors.responsibilities && <p className="mt-2 text-sm text-red-600">{errors.responsibilities}</p>}
                         </div>
                         <div>
-                            <label htmlFor="frequency" className="block text-sm font-medium text-gray-700">Frecuencia</label>
-                            <select name="frequency" id="frequency" value={poe.frequency} onChange={handleChange} required className={`mt-1 block w-full rounded-md shadow-sm ${errors.frequency ? 'border-red-300 text-red-900 placeholder-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:border-sky-500 focus:ring-sky-500'}`}>
-                                <option value="">Seleccione una frecuencia</option>
-                                <option value="Después de cada uso">Después de cada uso</option>
-                                <option value="Al menos una vez al dia">Al menos una vez al día</option>
-                                <option value="Al final de la jornada">Al final de la jornada</option>
-                                <option value="Diaria">Diaria</option>
-                                <option value="Semanal">Semanal</option>
-                                <option value="Mensual">Mensual</option>
-                                <option value="Anual">Anual</option>
-                                <option value="Según necesidad">Según necesidad</option>
-                            </select>
+                            <label htmlFor="frequency" className="block text-sm font-medium text-gray-700 mb-2">Frecuencia (seleccione una o más)</label>
+                            <div className={`p-3 border rounded-md bg-gray-50 ${errors.frequency ? 'border-red-300' : 'border-gray-200'}`}>
+                                {poe.frequency.length > 0 && (
+                                    <div className="flex flex-wrap gap-2 mb-3">
+                                        {poe.frequency.map(freq => (
+                                            <span key={freq} className="flex items-center bg-sky-100 text-sky-800 text-sm font-medium px-2.5 py-0.5 rounded-full">
+                                                {freq}
+                                                <button type="button" onClick={() => handleFrequencyChange(freq, false)} className="ml-1.5 -mr-1 p-0.5 rounded-full hover:bg-sky-200 focus:outline-none">
+                                                    <XIcon className="w-3 h-3"/>
+                                                </button>
+                                            </span>
+                                        ))}
+                                    </div>
+                                )}
+                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                    {predefinedFrequencies.map(freq => (
+                                        <label key={freq} className="flex items-center space-x-2 text-sm text-gray-700 cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                className="rounded border-gray-300 text-sky-600 shadow-sm focus:border-sky-300 focus:ring focus:ring-offset-0 focus:ring-sky-200 focus:ring-opacity-50"
+                                                checked={poe.frequency.includes(freq)}
+                                                onChange={(e) => handleFrequencyChange(freq, e.target.checked)}
+                                            />
+                                            <span>{freq}</span>
+                                        </label>
+                                    ))}
+                                </div>
+                                <div className="mt-3">
+                                    <input
+                                        type="text"
+                                        placeholder="Añadir otra y presionar Enter"
+                                        className="mt-1 block w-full rounded-md shadow-sm border-gray-300 focus:border-sky-500 focus:ring-sky-500 text-sm"
+                                        value={customFrequency}
+                                        onChange={(e) => setCustomFrequency(e.target.value)}
+                                        onKeyDown={addCustomFrequency}
+                                    />
+                                </div>
+                            </div>
                             {errors.frequency && <p className="mt-2 text-sm text-red-600">{errors.frequency}</p>}
                         </div>
                     </div>

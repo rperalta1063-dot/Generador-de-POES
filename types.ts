@@ -1,4 +1,3 @@
-
 export type Role = 'operator' | 'verifier' | 'auditor' | 'admin';
 export type PoeStatus = 'approved' | 'pending' | 'rejected' | 'draft';
 
@@ -31,14 +30,20 @@ export interface VersionRecord {
     changes: string;
 }
 
+export interface Responsibility {
+    id: number;
+    cargo: string;
+    responsabilidad: string;
+}
+
 export interface POE {
     id: number;
     establishment: string;
     code: string;
     title: string;
     applicationArea: string;
-    responsible: string;
-    frequency: string;
+    responsibilities: Responsibility[];
+    frequency: string[];
     objective: string;
     scope: string;
     productsAndMaterials: string;

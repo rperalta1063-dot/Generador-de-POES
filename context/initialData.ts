@@ -1,4 +1,3 @@
-
 import { User, POE, AuditLog } from '../types';
 
 export const initialUsers: User[] = [
@@ -15,8 +14,11 @@ export const initialPoes: POE[] = [
         code: 'POE-LMP-001',
         title: 'POE de Limpieza de Superficies',
         applicationArea: 'Áreas de producción',
-        responsible: 'Juan Pérez',
-        frequency: 'Diaria',
+        responsibilities: [
+            { id: 1, cargo: 'Operador de Limpieza', responsabilidad: 'Ejecutar el procedimiento de limpieza.' },
+            { id: 2, cargo: 'Supervisor de Turno', responsabilidad: 'Verificar la correcta ejecución de la limpieza.' }
+        ],
+        frequency: ['Diaria'],
         objective: 'Establecer el procedimiento para la limpieza y desinfección de superficies en áreas de producción',
         scope: 'Aplica a todo el personal de limpieza y operarios de las áreas de producción.',
         productsAndMaterials: 'Desinfectante clorado, Agua, Recipientes medidores, Paños de microfibra limpios, Guantes de nitrilo, Gafas de seguridad',
@@ -26,7 +28,7 @@ export const initialPoes: POE[] = [
         correctiveActions: 'En caso de no conformidad, repetir el procedimiento de limpieza y notificar al supervisor. Si persisten los problemas, re-capacitar al personal.',
         steps: [
             { id: 1, name: 'Preparación', text: 'Preparar la solución desinfectante según las indicaciones del fabricante.', image: null },
-            { id: 2, name: 'Aplicación', text: 'Aplicar la solución en todas las superficies designadas utilizando un paño limpio.', image: null },
+            { id: 2, name: 'Aplicación', text: 'Aplicar la solution en todas las superficies designadas utilizando un paño limpio.', image: null },
             { id: 3, name: 'Tiempo de Contacto', text: 'Dejar que la solución actúe sobre las superficies durante el tiempo de contacto requerido (10 minutos).', image: null },
             { id: 4, name: 'Enjuague', text: 'Enjuagar las superficies con agua potable si es requerido por el tipo de desinfectante.', image: null }
         ],
@@ -47,8 +49,10 @@ export const initialPoes: POE[] = [
         code: 'POE-SAN-002',
         title: 'POE de Sanitización de Equipos',
         applicationArea: 'Equipos de procesamiento de alimentos',
-        responsible: 'María González',
-        frequency: 'Semanal',
+        responsibilities: [
+            { id: 1, cargo: 'Operario de Saneamiento', responsabilidad: 'Ejecutar el desmontaje, limpieza y sanitización de equipos.' }
+        ],
+        frequency: ['Semanal'],
         objective: 'Definir el proceso de sanitización de equipos de procesamiento para garantizar la inocuidad de los productos',
         scope: 'Aplica a todos los equipos de la línea de producción 2.',
         productsAndMaterials: 'Detergente alcalino, Sanitizante a base de amonio cuaternario, Cepillos de nylon, Tiras reactivas, Agua potable, Herramientas para desmontaje, Equipo de protección personal completo (guantes, botas, delantal impermeable, gafas).',

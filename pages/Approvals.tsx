@@ -2,10 +2,11 @@ import React, { useMemo, useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { POE } from '../types';
 import { formatDate } from '../utils/helpers';
-import { EyeIcon, CheckIcon, XIcon, CheckCircle } from '../components/Icons';
+import { EyeIcon, CheckIcon, XIcon, CheckCircle, SparklesIcon } from '../components/Icons';
 import PoeDetailModal from '../components/PoeDetailModal';
 import ConfirmationModal from '../components/ConfirmationModal';
 import RejectionModal from '../components/RejectionModal';
+import AiSuggestionsModal from '../components/AiSuggestionsModal';
 
 const Approvals: React.FC = () => {
     const { poes, currentEstablishment, updatePoe, addAuditLog, currentUser, addToast } = useApp();
@@ -13,6 +14,7 @@ const Approvals: React.FC = () => {
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
     const [isApproveModalOpen, setIsApproveModalOpen] = useState(false);
     const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
+    const [isAiModalOpen, setIsAiModalOpen] = useState(false);
     const [poeForAction, setPoeForAction] = useState<POE | null>(null);
 
     const pendingPOEs = useMemo(() => {
@@ -29,6 +31,12 @@ const Approvals: React.FC = () => {
         setPoeForAction(poe);
         setIsRejectModalOpen(true);
     };
+
+    const openAiModal = (poe: POE) => {
+        setPoeForAction(poe);
+        setIsAiModalOpen(true);
+    };
+
 
     const confirmApprove = () => {
         if (!currentUser || !poeForAction) {
@@ -123,13 +131,18 @@ const Approvals: React.FC = () => {
                                     <td className="px-4 py-3">{poe.createdBy}</td>
                                     <td className="px-4 py-3">{formatDate(poe.createdAt)}</td>
                                     <td className="px-4 py-3 flex items-center space-x-2">
-                                        <button onClick={() => openApproveModal(poe)} className="flex items-center text-sm text-green-600 bg-green-100 hover:bg-green-200 px-2 py-1 rounded-md">
+                                        <button onClick={() => openApproveModal(poe)} className="flex items-center text-sm text-green-600 bg-green-100 hover:bg-green-200 px-2 py-1 rounded-md" title="Aprobar">
                                             <CheckIcon className="w-4 h-4 mr-1"/> Aprobar
                                         </button>
-                                        <button onClick={() => openRejectModal(poe)} className="flex items-center text-sm text-red-600 bg-red-100 hover:bg-red-200 px-2 py-1 rounded-md">
+                                        <button onClick={() => openRejectModal(poe)} className="flex items-center text-sm text-red-600 bg-red-100 hover:bg-red-200 px-2 py-1 rounded-md" title="Rechazar">
                                             <XIcon className="w-4 h-4 mr-1"/> Rechazar
                                         </button>
-                                        <button onClick={() => handleView(poe)} className="text-blue-600 hover:text-blue-800"><EyeIcon /></button>
+                                        <button onClick={() => openAiModal(poe)} className="text-purple-600 hover:text-purple-800" title="Sugerencias IA">
+                                            <SparklesIcon />
+                                        </button>
+                                        <button onClick={() => handleView(poe)} className="text-blue-600 hover:text-blue-800" title="Ver Detalles">
+                                            <EyeIcon />
+                                        </button>
                                     </td>
                                 </tr>
                             ))}
@@ -144,6 +157,14 @@ const Approvals: React.FC = () => {
             </div>
             {selectedPoe && <PoeDetailModal isOpen={isDetailModalOpen} onClose={() => setIsDetailModalOpen(false)} poe={selectedPoe} />}
             
+            {poeForAction && (
+                <AiSuggestionsModal
+                    isOpen={isAiModalOpen}
+                    onClose={() => { setIsAiModalOpen(false); setPoeForAction(null); }}
+                    poe={poeForAction}
+                />
+            )}
+
             <ConfirmationModal
                 isOpen={isApproveModalOpen}
                 onClose={() => { setIsApproveModalOpen(false); setPoeForAction(null); }}
