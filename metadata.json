@@ -1,0 +1,5 @@
+{
+  "name": "Generador de POES",
+  "description": "A comprehensive system to create, manage, approve, and audit Standard Operating Procedures (SOPs), referred to as POEs. The application features role-based access for operators, verifiers, auditors, and administrators, with a dashboard for quick insights, detailed lists, and history tracking.",
+  "requestFramePermissions": []
+}
